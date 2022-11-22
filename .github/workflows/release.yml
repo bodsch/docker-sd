@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         release_tag:
-          - 0.9.5
+          - 0.9.0
         go:
           - 1.19
 
