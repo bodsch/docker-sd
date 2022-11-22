@@ -1,0 +1,134 @@
+package container
+
+import (
+	"context"
+	"log"
+  "errors"
+  "encoding/json"
+	"reflect"
+	"strconv"
+	// "sort"
+
+	"github.com/docker/docker/api/types"
+)
+
+// -------------------------
+
+// -------------------------
+
+func ListContainer() (string, error) {
+	ctx := context.Background()
+
+	cli := Client()
+
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	if err != nil {
+		log.Printf("Unable to list containers: %v", err)
+
+		return "", err
+	}
+
+	container_data := containerData{}
+
+	if len(containers) > 0 {
+		// -> https://pkg.go.dev/github.com/docker/docker@v20.10.21+incompatible/api/types#Container
+
+		container_labels := make(map[string]string)
+		// container_network := []containerNetwork{}
+
+		for _, container := range containers {
+			log.Printf("%s %s %s\n\n", container.ID[:10], container.Image, container.Names[0])
+
+			// log.Printf("Status:\n")
+			// log.Printf("  - %s\n", container.Status)
+			// log.Printf("State:\n")
+			// log.Printf("  - %s\n", container.State)
+
+			container_data.Status = container.Status
+			container_data.State = container.State
+
+			// log.Printf("Labels:\n")
+			labels := container.Labels
+
+			for k, v := range labels {
+				container_labels[k] = v
+				if k == "service-discovery" || k == "service-discover" {
+					container_data.ServiceDiscovery, _ = strconv.ParseBool(v)
+				}
+			}
+
+			container_data.Labels = container_labels
+			// log.Printf("-----------------------------------------------\n")
+
+			// log.Printf("Network:\n")
+			// -> https://pkg.go.dev/github.com/docker/docker@v20.10.21+incompatible/api/types#SummaryNetworkSettings
+			ports := container.Ports
+
+			// var slice = []containerNetwork{}
+
+			for _, p := range ports {
+				// -> https://pkg.go.dev/github.com/docker/docker/api/types#Port
+
+				log.Printf("  - IP %s - private %d - public  %d\n", p.IP, p.PrivatePort, p.PublicPort)
+
+        w := containerNetwork{
+					ip:          p.IP,
+					privatePort: p.PrivatePort,
+					publicPort:  p.PublicPort,
+					protocol:    p.Type,
+				}
+
+				log.Printf("-----------------------------------------------\n")
+        log.Println(w)
+        log.Println(reflect.TypeOf(w))
+        log.Printf("-----------------------------------------------\n")
+
+				container_data.Network = append(container_data.Network, w)
+			}
+/*
+			log.Printf("-----------------------------------------------\n")
+
+			log.Println(slice)
+			log.Println(reflect.TypeOf(slice))
+
+			log.Printf("-----------------------------------------------\n")
+
+			slice2, _ := JSONMarshal(slice)
+			log.Println(slice2)
+			log.Println(reflect.TypeOf(slice2))
+
+			log.Printf("-----------------------------------------------\n")
+			for _, v := range slice {
+				log.Println(v.ip, v.publicPort)
+			}
+*/
+			/*
+			         slice3 := sort.Sort(ByIP(slice))
+			   			log.Println(slice3)
+			         log.Println(reflect.TypeOf(slice3))
+			*/
+			log.Printf("-----------------------------------------------\n")
+
+//			container_data.Network = slice
+		}
+
+	} else {
+		log.Println("There are no containers running")
+    return "", errors.New("There are no containers running")
+	}
+
+  log.Printf("-----------------------------------------------\n")
+	log.Println(container_data)
+  log.Printf("-----------------------------------------------\n")
+
+	b, err := json.MarshalIndent(container_data, "", "  ")
+
+	// b, err := JSONMarshal(container_data)
+
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+
+	return string(b), nil
+}
