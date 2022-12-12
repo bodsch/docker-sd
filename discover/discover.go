@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bodsch/container-service-discovery/container"
 	"github.com/bodsch/container-service-discovery/utils"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -13,42 +14,95 @@ type ServiceDiscover struct {
 	Labels  map[string]string `json:"labels"`
 }
 
-func UpdateLables(containerNetwork []container.ContainerNetwork, labels map[string]string) map[string]string {
+func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bool) map[string]string {
 
-	for _, value := range containerNetwork {
+	new_labels := make(map[string]string)
 
-		networkInternalPort := value.PrivatePort
+	if debug {
+		fmt.Println("[DEBUG] +-------------------------------------------------------------------")
+		fmt.Printf("[DEBUG] | networkInternalPort : '%v'- %v\n", networkInternalPort, reflect.TypeOf(networkInternalPort))
+		fmt.Printf("[DEBUG] |  KnownMetricsPorts: '%v'\n", utils.KnownMetricsPorts)
+		fmt.Printf("[DEBUG] |  metrics path     : '%v'\n", utils.KnownMetricsPorts[networkInternalPort])
+	}
 
-		if val, ok := utils.KnownMetricsPorts[networkInternalPort]; ok {
+	metrics_path := utils.KnownMetricsPorts[networkInternalPort]
 
-			_actuator := "unknown"
+	_actuator := "unknown"
+	metrics_path_overwrite := ""
+	metrics_source_overwrite := ""
 
-			if strings.Contains(val, "actuator") {
-				_actuator = "actuator"
+	for k, v := range labels {
+
+		if strings.Contains(k, "org") || strings.Contains(k, "repository") {
+			continue
+		}
+
+		if strings.Contains(k, "service-discover.") {
+			fmt.Printf("[DEBUG] |   service-discover overwrites '%s'\n", k)
+
+			if strings.Contains(k, "service-discover.port.") {
+				parts := strings.Split(k, ".")
+				port := parts[len(parts)-1]
+
+				if port == strconv.FormatInt(int64(networkInternalPort), 10)  {
+					metrics_path_overwrite = v
+					break
+				}
 			}
-			if strings.Contains(val, "metrics") {
-				_actuator = "metrics"
+
+			if k == "service-discover.path" {
+				metrics_path_overwrite = v
 			}
-
-			labels["__metrics_path__"] = val
-			labels["source"] = _actuator
-
-			for k, v := range labels {
-				labels[k] = v
+			if k == "service-discover.source" {
+				metrics_source_overwrite = v
 			}
 		}
+
+		new_labels[k] = v
 	}
-	return labels
+
+	if len(metrics_path) > 0 || len(metrics_path_overwrite) > 0 {
+
+		if len(metrics_source_overwrite) > 0 {
+			new_labels["source"] = metrics_source_overwrite
+		} else {
+
+			if strings.Contains(metrics_path, "actuator") {
+				_actuator = "actuator"
+			}
+			if strings.Contains(metrics_path, "metrics") {
+				_actuator = "metrics"
+			}
+			new_labels["source"] = _actuator
+		}
+		if len(metrics_path_overwrite) > 0 {
+			new_labels["__metrics_path__"] = metrics_path_overwrite
+		} else {
+			new_labels["__metrics_path__"] = metrics_path
+		}
+	}
+
+	if debug {
+		fmt.Printf("[DEBUG] | labels: %s\n", new_labels)
+	}
+
+	if debug {
+		fmt.Println("[DEBUG] +-------------------------------------------------------------------\n")
+	}
+
+	return new_labels
 }
 
-func Discover(dockerHost string) ([]ServiceDiscover, error) {
+func Discover(dockerHost string, debug bool) ([]ServiceDiscover, error) {
 
 	con, _ := container.ListContainer(dockerHost)
 
 	discoveryResult := []ServiceDiscover{}
 
-	for _, value := range con {
-
+	for key, value := range con {
+		if debug {
+			fmt.Printf("[DEBUG] container: %s\n", key)
+		}
 		containerLabels := make(map[string]string)
 
 		containerLabels = value.Labels
@@ -59,18 +113,29 @@ func Discover(dockerHost string) ([]ServiceDiscover, error) {
 
 		if containerDiscover == true {
 
-			var networkExternalPort uint16
+			var networkPort uint16
 
-			for _, value := range containerNetwork {
-				networkExternalPort = value.PublicPort
+			for idx, v := range containerNetwork {
+				if debug {
+					fmt.Printf("[DEBUG] network: idx: %v, data: %v\n", idx, v)
+				}
+				networkPort = v.PublicPort
+				internalPort := v.PrivatePort
+
+				updated_labels := UpdateLables(internalPort, containerLabels, debug)
+
+				if len(updated_labels) > 0 {
+
+					target := fmt.Sprintf("localhost:%s", strconv.FormatInt(int64(networkPort), 10))
+					targetArray[0] = target
+
+					discoveryResult = append(discoveryResult, ServiceDiscover{Targets: targetArray, Labels: updated_labels})
+				}
 			}
+		}
 
-			updated_labels := UpdateLables(containerNetwork, containerLabels)
-
-			target := fmt.Sprintf("localhost:%s", strconv.FormatInt(int64(networkExternalPort), 10))
-			targetArray[0] = target
-
-			discoveryResult = append(discoveryResult, ServiceDiscover{Targets: targetArray, Labels: updated_labels})
+		if debug {
+			fmt.Println("[DEBUG] -------------------------------------------------------------------\n")
 		}
 	}
 

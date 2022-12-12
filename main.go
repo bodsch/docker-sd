@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
+	"log/syslog"
 	"net/http"
 	"os"
 	"strconv"
@@ -41,12 +42,15 @@ type ConfigDockerHosts []struct {
 }
 
 type Config struct {
+	LogFile     string            `yaml:"log_file"`
 	RestAPI     ConfigRestAPI     `yaml:"rest_api"`
 	DockerHosts ConfigDockerHosts `yaml:"docker_hosts"`
 }
 
 var DockerHost = "unix:///run/docker.sock"
 var DockerMetrics = make(map[string]string)
+
+var debug bool
 
 const (
 	// YYYY-MM-DD: 2022-03-23
@@ -78,13 +82,13 @@ func fullList() map[string]interface{} {
 
 func detectContainer() map[string]interface{} {
 	s := make(map[string]interface{})
-	l, _ := detect.Detect(DockerHost)
+	l, _ := detect.Detect(DockerHost, debug)
 	json.Unmarshal([]byte(l), &s)
 	return s
 }
 
 func serviceDiscover() []discover.ServiceDiscover {
-	l, _ := discover.Discover(DockerHost)
+	l, _ := discover.Discover(DockerHost, debug)
 	return l
 }
 
@@ -110,14 +114,8 @@ func jsonLoggerMiddleware() gin.HandlerFunc {
 
 func main() {
 
-	log.SetFlags(log.Lmsgprefix)
-	log.SetPrefix(time.Now().UTC().Format(YYYYMMDD+" "+HHMMSS24h) + ": ")
-
-	var listenAddress string
-	var listenPort int
-
-	listenAddress = "127.0.0.1"
-	listenPort = 8088
+	var listenAddress string = "127.0.0.1"
+	var listenPort int = 8088
 
 	var cfg Config
 	args := ProcessArgs(&cfg)
@@ -129,6 +127,15 @@ func main() {
 		log.Printf("use default values")
 
 	} else {
+
+		logWriter, err := syslog.New(syslog.LOG_SYSLOG, "docker-sd")
+		if err != nil {
+			log.Fatalln("Unable to set logfile:", err.Error())
+		}
+		log.SetFlags(log.Lmsgprefix)
+		log.SetPrefix(time.Now().UTC().Format(YYYYMMDD+" "+HHMMSS24h) + ": ")
+		log.SetOutput(logWriter)
+
 		listenAddress = cfg.RestAPI.Address
 		listenPort = cfg.RestAPI.Port
 
@@ -145,8 +152,11 @@ func main() {
 
 				if len(DockerMetrics) > 0 {
 					// read path definition of the configuration
+					if debug {
+						fmt.Printf("[DEBUG] read path definition of the configuration\n")
+					}
 					for k, v := range DockerMetrics {
-						// convert strin inti unint16
+						// convert string into unint16
 						value, _ := strconv.ParseUint(k, 0, 16)
 						// strconv.ParseUint returns only uint64!
 						port := uint16(value)
@@ -155,6 +165,9 @@ func main() {
 					}
 				} else {
 					// use default metrics definition
+					if debug {
+						fmt.Printf("[DEBUG] use default metrics definition\n")
+					}
 					utils.KnownMetricsPorts = map[uint16]string{
 						8080: "/metrics", // cadvisor
 						9216: "/metrics", // mongodb
@@ -179,7 +192,10 @@ func main() {
 
 	listener := fmt.Sprintf("%s:%d", listenAddress, listenPort)
 
-	// log.Println(listener)
+	if debug {
+		fmt.Printf("[DEBUG] listener: %s\n", listener)
+		fmt.Printf("[DEBUG] known ports: %v\n", utils.KnownMetricsPorts)
+	}
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -249,6 +265,7 @@ func ProcessArgs(cfg interface{}) Args {
 	var configHelp bool
 
 	flag.BoolVar(&configHelp, "help", false, "This help")
+	flag.BoolVar(&debug, "debug", false, "enable debug")
 	flag.StringVar(&a.ConfigPath, "config", "docker-sd.yml", "configuration file")
 
 	flag.Parse()

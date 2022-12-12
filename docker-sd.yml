@@ -1,18 +1,23 @@
 ---
 
+# log_file: "/tmp/docker-sd.log"
+
 rest_api: {}
   # port: 8088
   # address: "0.0.0.0"
 
 docker_hosts:
-  - host: "tcp://molecule.matrix.lan:2376"
+  - host: "tcp://localhost:2376"
     #username: ""
     #password: ""
     #tls: {}
     services:
       - "cae-live"
     metrics_ports:
-      8080: "/metrics"
+      8080:
+      8081: "/actuator/prometheus"  # CoreMedia - actuator
+      8199: "/metrics"              # CoreMedia - jmx_exporter
+      8090: "/metrics"              # mgob
 
 docker_addition_labels:
   - container: workflow-server

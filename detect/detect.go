@@ -1,6 +1,7 @@
 package detect
 
 import (
+	"fmt"
 	"github.com/bodsch/container-service-discovery/container"
 	"github.com/bodsch/container-service-discovery/utils"
 )
@@ -8,10 +9,10 @@ import (
 type ContainerStates struct {
 	State            string `json:"state"`
 	Running          bool   `json:"running"`
-	ServiceDiscovery bool   `json:"servce-discover"`
+	ServiceDiscovery bool   `json:"service-discover"`
 }
 
-func Detect(dockerHost string) (string, error) {
+func Detect(dockerHost string, debug bool) (string, error) {
 
 	con, _ := container.ListContainer(dockerHost)
 
@@ -37,6 +38,10 @@ func Detect(dockerHost string) (string, error) {
 
 	if err != nil {
 		return "", err
+	}
+
+	if debug {
+		fmt.Println("[DEBUG] debug: %s", string(b))
 	}
 
 	return string(b), nil

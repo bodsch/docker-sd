@@ -50,3 +50,10 @@ The Service Discover is activated by default for each running container, but can
     labels:
       service-discover.enabled: "false"
 ```
+
+```yaml
+    labels:
+      service-discover.enabled: "false"
+      service-discover.port.8199: "/metrics"
+      service-discover.port.8081: "/actuator/prometheus"
+```

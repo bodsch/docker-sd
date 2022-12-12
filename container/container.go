@@ -3,14 +3,10 @@ package container
 import (
 	"context"
 	"errors"
+	"github.com/docker/docker/api/types"
 	"log"
-	// "encoding/json"
-	// "reflect"
 	"strconv"
 	"strings"
-	// "sort"
-	// "github.com/bodsch/container-service-discovery/utils"
-	"github.com/docker/docker/api/types"
 )
 
 // -------------------------
@@ -53,7 +49,11 @@ func ListContainer(dockerHost string) (map[string]ContainerData, error) {
 
 			for k, v := range labels {
 				// drop labels
-				if k == "maintainer" || k == "owner" {
+				if k == "maintainer" || k == "owner" || k == "watchdog" || k == "GIT_BUILD_REF" {
+					continue
+				}
+
+				if strings.Contains(k, "label-schema") {
 					continue
 				}
 

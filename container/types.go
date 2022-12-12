@@ -21,7 +21,7 @@ type ContainerData struct {
 	Status           string             `json:"status"`
 	Network          []ContainerNetwork `json:"network"`
 	Labels           map[string]string  `json:"labels"`
-	ServiceDiscovery bool               `json:"servce-discover"`
+	ServiceDiscovery bool               `json:"service-discover"`
 }
 
 /*
