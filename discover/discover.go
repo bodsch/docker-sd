@@ -44,7 +44,7 @@ func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bo
 				parts := strings.Split(k, ".")
 				port := parts[len(parts)-1]
 
-				if port == strconv.FormatInt(int64(networkInternalPort), 10)  {
+				if port == strconv.FormatInt(int64(networkInternalPort), 10) {
 					metrics_path_overwrite = v
 					break
 				}

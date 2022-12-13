@@ -3,9 +3,9 @@ package container
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/docker/docker/api/types"
 	"log"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -37,9 +37,9 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 				ContainerName = ContainerName[1:]
 			}
 
-					if debug {
-						fmt.Printf("[DEBUG] | container: '%s'\n", ContainerName)
-					}
+			if debug {
+				fmt.Printf("[DEBUG] | container: '%s'\n", ContainerName)
+			}
 			// enabled at default
 			sd_enabled := true
 
@@ -53,9 +53,9 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 			labels := container.Labels
 
 			for k, v := range labels {
-					if debug {
-						fmt.Printf("[DEBUG] |    label     : '%v'\n", k)
-					}
+				if debug {
+					fmt.Printf("[DEBUG] |    label     : '%v'\n", k)
+				}
 
 				// drop labels
 				if k == "maintainer" || k == "owner" || k == "watchdog" || k == "GIT_BUILD_REF" {
