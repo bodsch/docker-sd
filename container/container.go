@@ -5,13 +5,14 @@ import (
 	"errors"
 	"github.com/docker/docker/api/types"
 	"log"
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 // -------------------------
 
-func ListContainer(dockerHost string) (map[string]ContainerData, error) {
+func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, error) {
 	ctx := context.Background()
 
 	cli := Client(dockerHost)
@@ -35,6 +36,10 @@ func ListContainer(dockerHost string) (map[string]ContainerData, error) {
 			if ContainerName[0:1] == "/" {
 				ContainerName = ContainerName[1:]
 			}
+
+					if debug {
+						fmt.Printf("[DEBUG] | container: '%s'\n", ContainerName)
+					}
 			// enabled at default
 			sd_enabled := true
 
@@ -48,6 +53,10 @@ func ListContainer(dockerHost string) (map[string]ContainerData, error) {
 			labels := container.Labels
 
 			for k, v := range labels {
+					if debug {
+						fmt.Printf("[DEBUG] |    label     : '%v'\n", k)
+					}
+
 				// drop labels
 				if k == "maintainer" || k == "owner" || k == "watchdog" || k == "GIT_BUILD_REF" {
 					continue
@@ -58,6 +67,7 @@ func ListContainer(dockerHost string) (map[string]ContainerData, error) {
 				}
 
 				if strings.Contains(k, "discover") {
+
 					if k == "service-discover.enabled" || k == "service-discovery" || k == "service-discover" {
 						sd_enabled, _ = strconv.ParseBool(v)
 					}

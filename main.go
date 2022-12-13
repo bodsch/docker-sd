@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var Version string = "0.9.5"
+var Version string = "0.9.2"
 var Description string = "Prometheus Service Discovery for docker"
 
 // Args command-line parameters
@@ -75,7 +75,7 @@ func healthCheck() map[string]string {
 
 func fullList() map[string]interface{} {
 	s := make(map[string]interface{})
-	h, _ := full_list.FullList(DockerHost)
+	h, _ := full_list.FullList(DockerHost, debug)
 	json.Unmarshal([]byte(h), &s)
 	return s
 }

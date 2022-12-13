@@ -61,6 +61,10 @@ func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bo
 		new_labels[k] = v
 	}
 
+	if debug {
+		fmt.Printf("[DEBUG] | metrics path: '%s' (%v), '%s' (%v)\n", metrics_path, len(metrics_path), metrics_path_overwrite, len(metrics_path_overwrite))
+	}
+
 	if len(metrics_path) > 0 || len(metrics_path_overwrite) > 0 {
 
 		if len(metrics_source_overwrite) > 0 {
@@ -80,6 +84,9 @@ func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bo
 		} else {
 			new_labels["__metrics_path__"] = metrics_path
 		}
+	} else {
+		// no metrics path defined ...
+		new_labels = nil
 	}
 
 	if debug {
@@ -95,7 +102,7 @@ func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bo
 
 func Discover(dockerHost string, debug bool) ([]ServiceDiscover, error) {
 
-	con, _ := container.ListContainer(dockerHost)
+	con, _ := container.ListContainer(dockerHost, debug)
 
 	discoveryResult := []ServiceDiscover{}
 

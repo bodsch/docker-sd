@@ -47,7 +47,7 @@ lint:
 
 .PHONY: build
 build:
-	@BUILD_OUT=`$(GO_BUILD) $(GOFLAGS) -ldflags "$(LDFLAGS)" -o docker_sd .` ; \
+	@BUILD_OUT=`$(GO_BUILD) $(GOFLAGS) -ldflags "$(LDFLAGS)" -o docker-sd .` ; \
 	if [ "$$BUILD_OUT" ]; then \
 		echo -e "$(GO_BUILD) FAILED =>\n"; \
 		echo -e "$$BUILD_OUT\n" ;\

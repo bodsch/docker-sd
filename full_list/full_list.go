@@ -5,9 +5,9 @@ import (
 	"github.com/bodsch/container-service-discovery/utils"
 )
 
-func FullList(dockerHost string) (string, error) {
+func FullList(dockerHost string, debug bool) (string, error) {
 
-	con, _ := container.ListContainer(dockerHost)
+	con, _ := container.ListContainer(dockerHost, debug)
 
 	b, err := utils.JSONMarshal(con)
 

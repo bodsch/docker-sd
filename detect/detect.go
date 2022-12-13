@@ -14,7 +14,7 @@ type ContainerStates struct {
 
 func Detect(dockerHost string, debug bool) (string, error) {
 
-	con, _ := container.ListContainer(dockerHost)
+	con, _ := container.ListContainer(dockerHost, debug)
 
 	detectedContainers := make(map[string]ContainerStates)
 
