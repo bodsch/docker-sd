@@ -2,9 +2,9 @@
 
 # log_file: "/tmp/docker-sd.log"
 
-rest_api: {}
-  # port: 8088
-  # address: "0.0.0.0"
+rest_api:
+  port: 8188
+  # address: 192.168.1.1
 
 docker_hosts:
   - host: "tcp://localhost:2376"

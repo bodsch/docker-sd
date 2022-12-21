@@ -2,15 +2,16 @@ export CGO_ENABLED:=0
 export GOARCH:=amd64
 export PATH:=$(PATH):$(PWD)
 
-LDFLAGS=-X main.Version=$(shell $(CURDIR)/build/git-version.sh) -s
+# LDFLAGS=-X main.Version=$(shell $(CURDIR)/build/git-version.sh) -s
+LDFLAGS=-s
 GOFLAGS="-a"
 
 # TODO: Fix this on windows.
 ALL_SRC := $(shell find . \
 		-name '*.go' \
 		-not -path './vendor/*' \
-    	-not -path '*/gen-go/*' \
-    	-type f | sort)
+		-not -path '*/gen-go/*' \
+		-type f | sort)
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
 
 GOFMT=gofmt
@@ -27,22 +28,22 @@ all-pkgs:
 fmt:
 	@FMTOUT=`$(GOFMT) -s -l $(ALL_SRC) 2>&1`; \
 	if [ "$$FMTOUT" ]; then \
-	        echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-	        echo "$$FMTOUT\n"; \
-	        exit 1; \
+			echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
+			echo "$$FMTOUT\n"; \
+			exit 1; \
 	else \
-	    echo "Fmt finished successfully"; \
+		echo "Fmt finished successfully"; \
 	fi
 
 .PHONY: lint
 lint:
 	@LINTOUT=`$(GOLINT) $(ALL_PKGS) | grep -v $(TRACE_ID_LINT_EXCEPTION) | grep -v $(TRACE_OPTION_LINT_EXCEPTION) 2>&1`; \
 	if [ "$$LINTOUT" ]; then \
-	        echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
-	        echo "$$LINTOUT\n"; \
-	        exit 1; \
+			echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
+			echo "$$LINTOUT\n"; \
+			exit 1; \
 	else \
-	    echo "Lint finished successfully"; \
+		echo "Lint finished successfully"; \
 	fi
 
 .PHONY: build
@@ -53,6 +54,6 @@ build:
 		echo -e "$$BUILD_OUT\n" ;\
 		exit 1 ;\
 	else \
-	  	echo "build finished successfully"; \
-        exit 0 ;\
+		echo "build finished successfully"; \
+		exit 0 ;\
 	fi

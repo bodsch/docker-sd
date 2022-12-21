@@ -37,7 +37,9 @@ func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bo
 			continue
 		}
 
-		if strings.Contains(k, "service-discover.") {
+		if strings.Contains(k, "service-discover") {
+			if strings.Contains(k, "service-discover.") {
+
 			fmt.Printf("[DEBUG] |   service-discover overwrites '%s'\n", k)
 
 			if strings.Contains(k, "service-discover.port.") {
@@ -56,9 +58,11 @@ func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bo
 			if k == "service-discover.source" {
 				metrics_source_overwrite = v
 			}
+			}
+			continue
 		}
 
-		new_labels[k] = v
+		new_labels[strings.Replace(k, "-", "_", -1)] = v
 	}
 
 	if debug {

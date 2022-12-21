@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var Version string = "0.9.2"
+var Version string = "0.9.3"
 var Description string = "Prometheus Service Discovery for docker"
 
 // Args command-line parameters
@@ -136,6 +136,9 @@ func main() {
 		log.SetPrefix(time.Now().UTC().Format(YYYYMMDD+" "+HHMMSS24h) + ": ")
 		log.SetOutput(logWriter)
 
+		if debug {
+			fmt.Printf("[DEBUG] cfg: %v\n", cfg)
+		}
 		listenAddress = cfg.RestAPI.Address
 		listenPort = cfg.RestAPI.Port
 
