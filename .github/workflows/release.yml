@@ -9,8 +9,6 @@ on:
     #  - '**'
     #tags:
     #  - '*.*.*'
-  schedule:
-    - cron: "0 20 * * 0"
 
 jobs:
   release-linux-amd64:
