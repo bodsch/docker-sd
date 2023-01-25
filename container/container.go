@@ -38,6 +38,7 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 			}
 
 			if debug {
+				fmt.Println("[DEBUG] +-------------------------------------------------------------------")
 				fmt.Printf("[DEBUG] | container: '%s'\n", ContainerName)
 			}
 			// enabled at default
@@ -53,17 +54,17 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 			labels := container.Labels
 
 			for k, v := range labels {
-				if debug {
-					fmt.Printf("[DEBUG] |    label     : '%v'\n", k)
-				}
-
 				// drop labels
 				if k == "maintainer" || k == "owner" || k == "watchdog" || k == "GIT_BUILD_REF" {
 					continue
 				}
 
-				if strings.Contains(k, "label-schema") {
+				if strings.Contains(k, "label-schema") || strings.Contains(k, "org.") {
 					continue
+				}
+
+				if debug {
+					fmt.Printf("[DEBUG] |    label     : '%s' = '%s'\n", k, v)
 				}
 
 				if strings.Contains(k, "discover") {
@@ -105,6 +106,10 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 			detectedContainer[ContainerName] = container_data
 		}
 
+		if debug {
+			fmt.Println("[DEBUG] +-------------------------------------------------------------------\n")
+		}
+
 	} else {
 		log.Println("There are no containers running")
 		return detectedContainer, errors.New("There are no containers running")
@@ -121,5 +126,8 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 		log.Printf(string(b))
 		log.Printf("-----------------------------------------------\n")
 	*/
+
+
+
 	return detectedContainer, nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/bodsch/container-service-discovery/container"
 	"github.com/bodsch/container-service-discovery/utils"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -14,92 +13,138 @@ type ServiceDiscover struct {
 	Labels  map[string]string `json:"labels"`
 }
 
-func UpdateLables(networkInternalPort uint16, labels map[string]string, debug bool) map[string]string {
+func findOverwritePort(debug bool, labels map[string]string) (string, string, string) {
 
-	new_labels := make(map[string]string)
-
-	if debug {
-		fmt.Println("[DEBUG] +-------------------------------------------------------------------")
-		fmt.Printf("[DEBUG] | networkInternalPort : '%v'- %v\n", networkInternalPort, reflect.TypeOf(networkInternalPort))
-		fmt.Printf("[DEBUG] |  KnownMetricsPorts: '%v'\n", utils.KnownMetricsPorts)
-		fmt.Printf("[DEBUG] |  metrics path     : '%v'\n", utils.KnownMetricsPorts[networkInternalPort])
-	}
-
-	metrics_path := utils.KnownMetricsPorts[networkInternalPort]
-
-	_actuator := "unknown"
 	metrics_path_overwrite := ""
 	metrics_source_overwrite := ""
+	port := ""
 
 	for k, v := range labels {
 
-		if strings.Contains(k, "org") || strings.Contains(k, "repository") {
+		if strings.Contains(k, "service-discover") {
+
+			if strings.Contains(k, "service-discover.") {
+
+				if debug {
+					fmt.Printf("[DEBUG] |   service-discover overwrites '%s'\n", k)
+				}
+
+				if strings.Contains(k, "service-discover.port.") {
+					parts := strings.Split(k, ".")
+					port = parts[len(parts)-1]
+
+					metrics_path_overwrite = v
+				}
+
+				if k == "service-discover.path" {
+					metrics_path_overwrite = v
+				}
+				if k == "service-discover.source" {
+					metrics_source_overwrite = v
+				}
+			}
+			continue
+		}
+	}
+
+	return port, metrics_path_overwrite, metrics_source_overwrite
+}
+
+func targetData(debug bool, network []container.ContainerNetwork, labels map[string]string) ([]ServiceDiscover) { // ([1]string, map[string]string) {
+
+	if debug {
+		fmt.Printf("[DEBUG] |     - labels: %#v\n", labels)
+	}
+
+	port, metrics_path_overwrite, metrics_source_overwrite := findOverwritePort(debug, labels)
+
+	if debug {
+		fmt.Printf("[DEBUG] |     - metrics_path_overwrite   : %#s\n", metrics_path_overwrite)
+		fmt.Printf("[DEBUG] |     - metrics_source_overwrite : %#s\n", metrics_source_overwrite)
+		fmt.Printf("[DEBUG] |     - port                     : %#s\n", port)
+	}
+
+	new_labels := make(map[string]string)
+
+	discoveryResult := []ServiceDiscover{}
+
+	var targetArray [1]string
+
+	for idx := 0; idx < len(network); idx++ {
+    v := network[idx]
+
+		if debug {
+			fmt.Println("[DEBUG] |   +-------------------------------------------------------------------")
+			fmt.Printf("[DEBUG] |   |   network: idx: %v, data: %v\n", idx, v)
+		}
+
+		private_Port := network[idx].PrivatePort
+		metrics_path := ""
+
+		ui64, _ := strconv.ParseUint(port, 10, 64)
+		port_as_uint := uint16(ui64)
+
+		if len(utils.KnownMetricsPorts[private_Port]) > 0 {
+			metrics_path = utils.KnownMetricsPorts[private_Port]
+		}
+
+		// overwrite port and metrics path
+		if len(port) > 0 && port_as_uint == private_Port && len(metrics_path_overwrite) > 0 {
+			/* convert string to uint16 */
+			ui64, _ = strconv.ParseUint(port, 10, 64)
+			private_Port = uint16(ui64)
+
+			metrics_path = metrics_path_overwrite
+		}
+		// ignore all interfaces without metrics path
+		if len(metrics_path) == 0 {
 			continue
 		}
 
-		if strings.Contains(k, "service-discover") {
-			if strings.Contains(k, "service-discover.") {
+		public_Port  := network[idx].PublicPort
 
-			fmt.Printf("[DEBUG] |   service-discover overwrites '%s'\n", k)
+		if debug {
+			fmt.Printf("[DEBUG] |   |     -  public port  %v\n", public_Port)
+			fmt.Printf("[DEBUG] |   |     -  private port %v\n", private_Port)
+			fmt.Printf("[DEBUG] |   |     -  metrics path %v\n", metrics_path)
+		}
 
-			if strings.Contains(k, "service-discover.port.") {
-				parts := strings.Split(k, ".")
-				port := parts[len(parts)-1]
+		new_labels = containerLabels(debug, labels, metrics_path)
 
-				if port == strconv.FormatInt(int64(networkInternalPort), 10) {
-					metrics_path_overwrite = v
-					break
-				}
-			}
+		if debug {
+			fmt.Printf("[DEBUG] |   |   -  new labels  %v\n", new_labels)
+			fmt.Println("[DEBUG] |   +-------------------------------------------------------------------")
+		}
 
-			if k == "service-discover.path" {
-				metrics_path_overwrite = v
-			}
-			if k == "service-discover.source" {
-				metrics_source_overwrite = v
-			}
-			}
+		target := fmt.Sprintf("localhost:%s", strconv.FormatInt(int64(public_Port), 10))
+		targetArray[0] = target
+
+		discoveryContainer := ServiceDiscover{Targets: targetArray, Labels: new_labels}
+		discoveryResult = append(discoveryResult, discoveryContainer)
+	}
+
+	return discoveryResult
+}
+
+func containerLabels(debug bool, labels map[string]string, metrics_path string) (map[string]string) {
+
+	/** */
+	new_labels := make(map[string]string)
+
+	for k, v := range labels {
+		// skip some labels
+		if strings.Contains(k, "org") || strings.Contains(k, "repository") || strings.Contains(k, "service-discover") {
 			continue
+		}
+
+		if debug {
+			fmt.Printf("[DEBUG] |   |     -> label: %s = %s\n", k, v)
 		}
 
 		new_labels[strings.Replace(k, "-", "_", -1)] = v
 	}
 
-	if debug {
-		fmt.Printf("[DEBUG] | metrics path: '%s' (%v), '%s' (%v)\n", metrics_path, len(metrics_path), metrics_path_overwrite, len(metrics_path_overwrite))
-	}
-
-	if len(metrics_path) > 0 || len(metrics_path_overwrite) > 0 {
-
-		if len(metrics_source_overwrite) > 0 {
-			new_labels["source"] = metrics_source_overwrite
-		} else {
-
-			if strings.Contains(metrics_path, "actuator") {
-				_actuator = "actuator"
-			}
-			if strings.Contains(metrics_path, "metrics") {
-				_actuator = "metrics"
-			}
-			new_labels["source"] = _actuator
-		}
-		if len(metrics_path_overwrite) > 0 {
-			new_labels["__metrics_path__"] = metrics_path_overwrite
-		} else {
-			new_labels["__metrics_path__"] = metrics_path
-		}
-	} else {
-		// no metrics path defined ...
-		new_labels = nil
-	}
-
-	if debug {
-		fmt.Printf("[DEBUG] | labels: %s\n", new_labels)
-	}
-
-	if debug {
-		fmt.Println("[DEBUG] +-------------------------------------------------------------------\n")
-	}
+	new_labels["__metrics_path__"] = metrics_path
 
 	return new_labels
 }
@@ -111,42 +156,28 @@ func Discover(dockerHost string, debug bool) ([]ServiceDiscover, error) {
 	discoveryResult := []ServiceDiscover{}
 
 	for key, value := range con {
-		if debug {
-			fmt.Printf("[DEBUG] container: %s\n", key)
-		}
-		containerLabels := make(map[string]string)
-
-		containerLabels = value.Labels
-		containerNetwork := value.Network
 		containerDiscover := value.ServiceDiscovery
 
-		var targetArray [1]string
+		if debug {
+			fmt.Println("[DEBUG] +-------------------------------------------------------------------")
+			fmt.Printf("[DEBUG] | container: %s\n", key)
+			fmt.Printf("[DEBUG] |   - service discovery: %v\n", containerDiscover)
+		}
 
 		if containerDiscover == true {
 
-			var networkPort uint16
+			// discoveryContainer := []ServiceDiscover{}
 
-			for idx, v := range containerNetwork {
-				if debug {
-					fmt.Printf("[DEBUG] network: idx: %v, data: %v\n", idx, v)
-				}
-				networkPort = v.PublicPort
-				internalPort := v.PrivatePort
+			target_data := targetData(debug, value.Network, value.Labels)
 
-				updated_labels := UpdateLables(internalPort, containerLabels, debug)
-
-				if len(updated_labels) > 0 {
-
-					target := fmt.Sprintf("localhost:%s", strconv.FormatInt(int64(networkPort), 10))
-					targetArray[0] = target
-
-					discoveryResult = append(discoveryResult, ServiceDiscover{Targets: targetArray, Labels: updated_labels})
-				}
+			for _, value := range target_data {
+				discoveryContainer := ServiceDiscover{Targets: value.Targets, Labels: value.Labels}
+				discoveryResult = append(discoveryResult, discoveryContainer)
 			}
 		}
 
 		if debug {
-			fmt.Println("[DEBUG] -------------------------------------------------------------------\n")
+			fmt.Println("[DEBUG] +-------------------------------------------------------------------")
 		}
 	}
 

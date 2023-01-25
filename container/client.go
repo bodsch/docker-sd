@@ -7,9 +7,6 @@ import (
 
 func Client(dockerHost string) *client.Client {
 
-	// host string, version string, client *http.Client, httpHeaders map[string]string
-
-	// cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	cli, err := client.NewClientWithOpts(client.WithHost(dockerHost), client.WithAPIVersionNegotiation())
 
 	if err != nil {
