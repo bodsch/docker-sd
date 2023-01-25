@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var Version string = "0.9.3"
+var Version string = "0.10.0"
 var Description string = "Prometheus Service Discovery for docker"
 
 // Args command-line parameters
