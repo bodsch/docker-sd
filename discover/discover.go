@@ -134,6 +134,16 @@ func containerLabels(debug bool, labels map[string]string, metrics_path string) 
 	for k, v := range labels {
 		// skip some labels
 		if strings.Contains(k, "org") || strings.Contains(k, "repository") || strings.Contains(k, "service-discover") {
+			if debug {
+				fmt.Printf("[DEBUG] |   |     -> ignore label: %s\n", k)
+			}
+			continue
+		}
+
+		if strings.Contains(k, ".") {
+			if debug {
+				fmt.Printf("[DEBUG] |   |     -> ignore '.' label: %s\n", k)
+			}
 			continue
 		}
 
