@@ -2,13 +2,48 @@
 
 name: CI
 
+# on:
+#   push:
+#     branches:
+#     #branches-ignore:
+#     #  - '**'
+#     #tags:
+#     #  - '*.*.*'
+
 on:
+  schedule:
+    - cron: "40 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
   push:
     branches:
-    #branches-ignore:
-    #  - '**'
-    #tags:
-    #  - '*.*.*'
+      - 'main'
+      - 'feature/**'
+      - '!doc/**'
+    paths:
+      - "!Makefile"
+      - "!README.md"
+    tags:
+      - '*.*.*'
+  pull_request:
+    branches:
+      - 'main'
+      - 'feature/**'
+      - '!doc/**'
+    paths:
+      - "!Makefile"
+      - "!README.md"
+
+
 
 jobs:
   release-linux-amd64:
