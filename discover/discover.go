@@ -132,8 +132,22 @@ func containerLabels(debug bool, labels map[string]string, metrics_path string) 
 	new_labels := make(map[string]string)
 
 	for k, v := range labels {
+		if debug {
+			fmt.Printf("[DEBUG] |   |     -> label: %s = %s\n", k, v)
+		}
+
 		// skip some labels
 		if strings.Contains(k, "org") || strings.Contains(k, "repository") || strings.Contains(k, "service-discover") {
+			if debug {
+				fmt.Printf("[DEBUG] |   |     -> ignore label: %s\n", k)
+			}
+			continue
+		}
+
+		if strings.Contains(k, ".") {
+			if debug {
+				fmt.Printf("[DEBUG] |   |     -> ignore '.' label: %s\n", k)
+			}
 			continue
 		}
 
