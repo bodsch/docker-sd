@@ -54,21 +54,19 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 			labels := container.Labels
 
 			for k, v := range labels {
+				if debug {
+					fmt.Printf("[DEBUG] |    label     : '%s' = '%s'\n", k, v)
+				}
 				// drop labels
 				if k == "maintainer" || k == "owner" || k == "watchdog" || k == "GIT_BUILD_REF" {
 					continue
 				}
 
-				if strings.Contains(k, "label-schema") || strings.Contains(k, "org.") {
+				if strings.Contains(k, "label-schema") || strings.Contains(k, "org.") || strings.Contains(k, ".") {
 					continue
 				}
 
-				if debug {
-					fmt.Printf("[DEBUG] |    label     : '%s' = '%s'\n", k, v)
-				}
-
 				if strings.Contains(k, "discover") {
-
 					if k == "service-discover.enabled" || k == "service-discovery" || k == "service-discover" {
 						sd_enabled, _ = strconv.ParseBool(v)
 					}
@@ -126,8 +124,6 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 		log.Printf(string(b))
 		log.Printf("-----------------------------------------------\n")
 	*/
-
-
 
 	return detectedContainer, nil
 }
