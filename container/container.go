@@ -62,7 +62,7 @@ func ListContainer(dockerHost string, debug bool) (map[string]ContainerData, err
 					continue
 				}
 
-				if strings.Contains(k, "label-schema") || strings.Contains(k, "org.") || strings.Contains(k, ".") {
+				if strings.Contains(k, "label-schema") || strings.Contains(k, "org.") {
 					continue
 				}
 

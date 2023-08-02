@@ -7,6 +7,7 @@ rest_api:
   # address: 192.168.1.1
 
 docker_hosts:
+  - host: "tcp://molecule.docker.local:2376"
   - host: "tcp://localhost:2376"
     #username: ""
     #password: ""
@@ -23,3 +24,5 @@ docker_addition_labels:
   - container: workflow-server
     labels:
       - coremedia
+
+docker_drop_dotted_labels: true
