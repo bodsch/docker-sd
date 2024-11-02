@@ -59,11 +59,11 @@ jobs:
 
     steps:
       - name: 🛎 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: wangyoucao577/go-release-action@v1.33
+      - uses: wangyoucao577/go-release-action@v1.52
         with:
           github_token: ${{ secrets.GH_REGISTRY_TOKEN }}
           release_tag: ${{ matrix.release_tag }}
